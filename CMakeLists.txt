@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 2.8)
+project( LF2.cpp )                                 
+find_package( OpenCV REQUIRED )
+add_executable( LF2 LF2.cpp )                 
+target_link_libraries( LF2 ${OpenCV_LIBS} )    
