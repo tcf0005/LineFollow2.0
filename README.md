@@ -17,11 +17,11 @@ make
 ```
 
 ## Algorithm Steps
-1.) Sobel Operator Applied to Grayscale Input Image
-2.) Saturation Determined by converting input image into HSL Colorspace
-3.) Steps 1 and 2 are combined into a single image
-4.) Histogram Determined to Find X-Coordinate with Maximum Non-Zero Pixels
-5.) Sliding Box Detector Applied to Discretize the Line
+1. Sobel Operator Applied to Grayscale Input Image
+2. Saturation Determined by converting input image into HSL Colorspace
+3. Steps 1 and 2 are combined into a single image
+4. Histogram Determined to Find X-Coordinate with Maximum Non-Zero Pixels
+5. Sliding Box Detector Applied to Discretize the Line
 
 ## Useful Links
 ### Actual Lane Following Algorithm This was Based on: 
