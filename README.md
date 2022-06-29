@@ -16,7 +16,7 @@ make
 ./LF2
 ```
 
-##Algorithm Steps
+## Algorithm Steps
 1.) Sobel Operator Applied to Grayscale Input Image
 2.) Saturation Determined by converting input image into HSL Colorspace
 3.) Steps 1 and 2 are combined into a single image
@@ -24,5 +24,5 @@ make
 5.) Sliding Box Detector Applied to Discretize the Line
 
 ## Useful Links
-###Actual Lane Following Algorithm This was Based on: 
+### Actual Lane Following Algorithm This was Based on: 
 https://navoshta.com/detecting-road-features/
