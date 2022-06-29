@@ -3,8 +3,8 @@ Updated Version of 2021's Soft Sys Reccomended Vision Algorithm
 ## Added:
 * Sobel Derivative Filter to Find Edges
 * Removed HSV Filter 
-  *Replaced with Saturation Filter (Channel of HSL)
-*Sliding Box Algorithm
+  * Replaced with Saturation Filter (Channel of HSL)
+* Sliding Box Algorithm
 
 
 ## To Compile and Run:
