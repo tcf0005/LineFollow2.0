@@ -123,16 +123,22 @@ int findPeakX(const vector<int>& data, int BoxWidth){
 
 
 std::vector<int> getHisto(Mat& Image,int numBoxes){
+//Defining a small rectangle at bottom of the image.
+    double ROIHper = 15/100;   
+    int ROIWidth = Image.cols;
+    int ROIHeight = 75; //$$ Rows from bottom to be considered ROI $$
+    cv::Rect RECTROI(0,Image.rows-ROIHeight,ROIWidth,ROIHeight);
+    Mat ROI = Image(RECTROI);
 //Function that Generates Histogram. (Counting nonzero pixels over all X-Coordinates. Resolution set by number of boxes)
-    int BoxHeight = Image.rows;
-    int BoxWidth = Image.cols/numBoxes;
+    int BoxHeight = ROI.rows;
+    int BoxWidth = ROI.cols/numBoxes;
     int currX = 0;
     int numNonZero;
     Mat crop;
     std::vector<int> nonZeroArray;
     for(int i=0; i<numBoxes; i++){
         cv::Rect currRect(currX, 0, BoxWidth, BoxHeight);
-        Mat crop = Image(currRect);
+        Mat crop = ROI(currRect);
         numNonZero = countNonZero(crop);
         nonZeroArray.push_back(numNonZero);
         currX= currX+BoxWidth;
@@ -194,7 +200,7 @@ std::vector<cv::Point> FindLine(Mat& Inverted, Mat& Original, int initX){
         ellipse(DrawingImage, center,Size(ElipseWidth, ElipseHeight), 90, 0, 360, Scalar(183, 3, 52),-1, LINE_AA);
 
         //Incramenting Search Regions. 
-        BoxWidth = BoxWidth - 10;
+        BoxWidth = BoxWidth - 5;
         BoxHeight = BoxHeight -3;
         BoxX = center.x-BoxWidth/2;
         BoxY = BoxY - BoxHeight;
