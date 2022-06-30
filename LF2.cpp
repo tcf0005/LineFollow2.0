@@ -14,51 +14,43 @@ using namespace std;
 
 class FindGreenLine{
     public:
-        std::vector<cv::Point> IdentifyLine(Mat& image);
+        std::vector<cv::Point> IdentifyLine(Mat& image);                                                //Master function that contains all of the private functions. Accepts image and returns line points
     private:
-        Mat SobelGrad(Mat& Input_Gray);
-        Mat GetSaturation(Mat& Input);
-        int getMaxAreaContourId(vector <vector<cv::Point>> &contours);
-        void printVec(std::vector<int> const &input);
-        void drawHist(const vector<int>& data, Mat& image, int BoxWidth, int numBoxes, string label);
-        int  findPeakX(const vector<int>& data, int BoxWidth);
-        std::vector<int> getHisto(Mat& Image,int numBoxes);
-        int findPeak(Mat& Image, int numBoxes);
-        std::vector<cv::Point> FindLine(Mat& Inverted, Mat& Original, int initX);
+        Mat SobelGrad(Mat& Input_Gray);                                                                 //Sobel Operator that computes gradient to find edges
+        Mat GetSaturation(Mat& Input);                                                                  //Function that Returns the thresholded Saturation Image
+        int getMaxAreaContourId(vector <vector<cv::Point>> &contours);                                  //Funtion that determines the ID of the contour with the max area. Returns the index of the maximum area.
+        void printVec(std::vector<int> const &input);                                                   //Prints the vector you pass (Used for debugging.)
+        int findPeak(Mat& Image, int numBoxes);                                                         //Function that contains all histogram functions Returns most likely x-coordinate of line to intialize. 
+            std::vector<int> getHisto(Mat& Image,int numBoxes);                                             //Function that determines valuse for histogram.
+            void drawHist(const vector<int>& data, Mat& image, int BoxWidth, int numBoxes, string label);   //Function that Draws the histogram
+            int  findPeakX(const vector<int>& data, int BoxWidth);                                          //Function that determines the maximum value in the histogram.
+        std::vector<cv::Point> FindLine(Mat& Inverted, Mat& Original, int initX);                       //Function that discritizes the deteted line returns vector of x,y points on line
         
 };
 
 
 Mat FindGreenLine::SobelGrad(Mat& Input_Gray){ 
-//Sobel Operator that computes gradient to find edges
-
     //Initializing Variables.
     Mat grad_x, grad_y;
     Mat abs_grad_x, abs_grad_y;
     Mat grad;
     //Applying Gaussian Blur to deal with smaller contours
     GaussianBlur( Input_Gray, Input_Gray, Size( 3, 3), 0, 0 ); //$$ Kernal Size (Default is 3,3) Increasing Makes Blurier. Note: Must be odd number $$
-
     //Computing Sobel 
-        // Sobel(src_gray, grad_x, ddepth, 1, 0, ksize, scale, delta, BORDER_DEFAULT);
-    Sobel(Input_Gray, grad_x, CV_16S, 1, 0, 3, 1, 0);  //$$ Ksize (3 By Default) $$
-    Sobel(Input_Gray, grad_y, CV_16S, 0, 1, 3, 1, 0);
-    convertScaleAbs(grad_x, abs_grad_x);
-    convertScaleAbs(grad_y, abs_grad_y);
-    addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad);
-
+    // Sobel(src_gray, grad_x, ddepth, 1, 0, ksize, scale, delta, BORDER_DEFAULT); [opencv Function Definitions]
+        Sobel(Input_Gray, grad_x, CV_16S, 1, 0, 3, 1, 0);  //$$ Ksize (3 By Default) $$
+        Sobel(Input_Gray, grad_y, CV_16S, 0, 1, 3, 1, 0);
+        convertScaleAbs(grad_x, abs_grad_x);
+        convertScaleAbs(grad_y, abs_grad_y);
+        addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad);
     //Thresholding Edges (Weaker Edges Removed)
     threshold(grad, grad, 90, 255, THRESH_BINARY); //$$ Min and Max Threshold (90 and 255 by default) $$
-
     //Dialating to Fill in a bit: 
     dilate(grad, grad, Mat(), Point(-1, -1), 2, 1, 1); //$$ This defaults to 3x3 Kernal for the convolution. Will Need to do more reading if you want more/less $$
-
     return grad;
 }
 
-
 Mat FindGreenLine::GetSaturation(Mat& Input){ 
-//Function that Returns the thresholded Saturation Image
     //Intialization.
     cv::Mat hls;
     //Convert Color to HLS Colorspace
@@ -74,10 +66,7 @@ Mat FindGreenLine::GetSaturation(Mat& Input){
     return out;
 }
 
-
-
 int FindGreenLine::getMaxAreaContourId(vector <vector<cv::Point>> &contours){
-//Funtion that determines the ID of the contour with the max area. Returns the index of the maximum area.
     double maxArea = 0;
     int maxAreaContourId = -1;
     for (int j = 0; j < contours.size(); j++) {
@@ -90,27 +79,22 @@ int FindGreenLine::getMaxAreaContourId(vector <vector<cv::Point>> &contours){
     return maxAreaContourId;
 } 
 
-void FindGreenLine::printVec(std::vector<int> const &input)
-{//Prints the vector you pass (Used for debugging. )
+void FindGreenLine::printVec(std::vector<int> const &input){
     std::cout<<"OutputVector:"<<std::endl;
     for (int i = 0; i < input.size(); i++) {
         std::cout << input.at(i) <<std::endl;
     }
 }
 
-void FindGreenLine::drawHist(const vector<int>& data, Mat& image, int BoxWidth, int numBoxes, string label)
-{//Function that Draws the histogram
+void FindGreenLine::drawHist(const vector<int>& data, Mat& image, int BoxWidth, int numBoxes, string label){
     //Creating Empty Image of Appropriate Height
     Mat Drawing = Mat::zeros(Size(image.cols,image.rows),CV_8UC3);
-
     //Determining the Maximum Value. This is what the histogram is normalized around. 
     int Max = *max_element(data.begin(), data.end());
-
     //Intializing Variables. 
     int currX = 0;
     float heightPer;
     int height;
-    
     //Loop that draws Each individual box
     for(int i=0; i<numBoxes; i++){
         //Determine the Appropriate Height for the Rectangle (Normalized)
@@ -126,7 +110,6 @@ void FindGreenLine::drawHist(const vector<int>& data, Mat& image, int BoxWidth, 
 }
 
 int FindGreenLine::findPeakX(const vector<int>& data, int BoxWidth){
-//Function that determines the maximum value in the histogram.
     int MaxIndex = 0;
     for(int i=1;i<data.size(); i++){
         if(data[i]>data[MaxIndex]){
@@ -140,13 +123,13 @@ int FindGreenLine::findPeakX(const vector<int>& data, int BoxWidth){
 
 
 std::vector<int> FindGreenLine::getHisto(Mat& Image,int numBoxes){
-//Defining a small rectangle at bottom of the image.
+    //Defining a small rectangle at bottom of the image.
     double ROIHper = 15/100;   
     int ROIWidth = Image.cols;
     int ROIHeight = 75; //$$ Rows from bottom to be considered ROI $$
     cv::Rect RECTROI(0,Image.rows-ROIHeight,ROIWidth,ROIHeight);
     Mat ROI = Image(RECTROI);
-//Function that Generates Histogram. (Counting nonzero pixels over all X-Coordinates. Resolution set by number of boxes)
+    //Function that Generates Histogram. (Counting nonzero pixels over all X-Coordinates. Resolution set by number of boxes)
     int BoxHeight = ROI.rows;
     int BoxWidth = ROI.cols/numBoxes;
     int currX = 0;
@@ -164,8 +147,7 @@ std::vector<int> FindGreenLine::getHisto(Mat& Image,int numBoxes){
     return nonZeroArray;
 }
     
-int FindGreenLine::findPeak(Mat& Image, int numBoxes){ 
-    //Accepts the Image and The number of boxes, and returns the X-Coordinate most likely to be the line. This feeds to the line detection. 
+int FindGreenLine::findPeak(Mat& Image, int numBoxes){  
     std::vector<int> Histo = getHisto(Image, numBoxes);
     drawHist (Histo, Image, Image.cols/numBoxes, numBoxes, "Histogram");
     int Peak = findPeakX(Histo, Image.cols/numBoxes);
@@ -265,14 +247,9 @@ int main( int argc, char** argv){
     cv::imshow("Original",image);
     //Intializing Class:
     FindGreenLine Greeny;
-
-
      while (true)
      {
         std:vector<cv::Point> Line = Greeny.IdentifyLine(image);
-        
-       
-
         cv::waitKey(5);
      }
     return 0;
