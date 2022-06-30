@@ -12,7 +12,24 @@ using namespace cv;
 using namespace std;
 
 
-Mat SobelGrad(Mat& Input_Gray){ 
+class FindGreenLine{
+    public:
+        std::vector<cv::Point> IdentifyLine(Mat& image);
+    private:
+        Mat SobelGrad(Mat& Input_Gray);
+        Mat GetSaturation(Mat& Input);
+        int getMaxAreaContourId(vector <vector<cv::Point>> &contours);
+        void printVec(std::vector<int> const &input);
+        void drawHist(const vector<int>& data, Mat& image, int BoxWidth, int numBoxes, string label);
+        int  findPeakX(const vector<int>& data, int BoxWidth);
+        std::vector<int> getHisto(Mat& Image,int numBoxes);
+        int findPeak(Mat& Image, int numBoxes);
+        std::vector<cv::Point> FindLine(Mat& Inverted, Mat& Original, int initX);
+        
+};
+
+
+Mat FindGreenLine::SobelGrad(Mat& Input_Gray){ 
 //Sobel Operator that computes gradient to find edges
 
     //Initializing Variables.
@@ -40,7 +57,7 @@ Mat SobelGrad(Mat& Input_Gray){
 }
 
 
-Mat GetSaturation(Mat& Input){ 
+Mat FindGreenLine::GetSaturation(Mat& Input){ 
 //Function that Returns the thresholded Saturation Image
     //Intialization.
     cv::Mat hls;
@@ -59,7 +76,7 @@ Mat GetSaturation(Mat& Input){
 
 
 
-int getMaxAreaContourId(vector <vector<cv::Point>> &contours){
+int FindGreenLine::getMaxAreaContourId(vector <vector<cv::Point>> &contours){
 //Funtion that determines the ID of the contour with the max area. Returns the index of the maximum area.
     double maxArea = 0;
     int maxAreaContourId = -1;
@@ -73,7 +90,7 @@ int getMaxAreaContourId(vector <vector<cv::Point>> &contours){
     return maxAreaContourId;
 } 
 
-void printVec(std::vector<int> const &input)
+void FindGreenLine::printVec(std::vector<int> const &input)
 {//Prints the vector you pass (Used for debugging. )
     std::cout<<"OutputVector:"<<std::endl;
     for (int i = 0; i < input.size(); i++) {
@@ -81,7 +98,7 @@ void printVec(std::vector<int> const &input)
     }
 }
 
-void drawHist(const vector<int>& data, Mat& image, int BoxWidth, int numBoxes, string label)
+void FindGreenLine::drawHist(const vector<int>& data, Mat& image, int BoxWidth, int numBoxes, string label)
 {//Function that Draws the histogram
     //Creating Empty Image of Appropriate Height
     Mat Drawing = Mat::zeros(Size(image.cols,image.rows),CV_8UC3);
@@ -108,7 +125,7 @@ void drawHist(const vector<int>& data, Mat& image, int BoxWidth, int numBoxes, s
     imshow(label, Drawing);
 }
 
-int findPeakX(const vector<int>& data, int BoxWidth){
+int FindGreenLine::findPeakX(const vector<int>& data, int BoxWidth){
 //Function that determines the maximum value in the histogram.
     int MaxIndex = 0;
     for(int i=1;i<data.size(); i++){
@@ -122,7 +139,7 @@ int findPeakX(const vector<int>& data, int BoxWidth){
 
 
 
-std::vector<int> getHisto(Mat& Image,int numBoxes){
+std::vector<int> FindGreenLine::getHisto(Mat& Image,int numBoxes){
 //Defining a small rectangle at bottom of the image.
     double ROIHper = 15/100;   
     int ROIWidth = Image.cols;
@@ -147,7 +164,7 @@ std::vector<int> getHisto(Mat& Image,int numBoxes){
     return nonZeroArray;
 }
     
-int findPeak(Mat& Image, int numBoxes){ 
+int FindGreenLine::findPeak(Mat& Image, int numBoxes){ 
     //Accepts the Image and The number of boxes, and returns the X-Coordinate most likely to be the line. This feeds to the line detection. 
     std::vector<int> Histo = getHisto(Image, numBoxes);
     drawHist (Histo, Image, Image.cols/numBoxes, numBoxes, "Histogram");
@@ -157,7 +174,7 @@ int findPeak(Mat& Image, int numBoxes){
  
 
  
-std::vector<cv::Point> FindLine(Mat& Inverted, Mat& Original, int initX){
+std::vector<cv::Point> FindGreenLine::FindLine(Mat& Inverted, Mat& Original, int initX){
     //Finds Line. 
     //Cloning Input Image to Allow for Drawing 
     Mat DrawingImage = Original.clone();
@@ -214,37 +231,47 @@ std::vector<cv::Point> FindLine(Mat& Inverted, Mat& Original, int initX){
 }
 
 
+std::vector<cv::Point> FindGreenLine::IdentifyLine(Mat& image){
+    //Changing Image Size to 640x480 px
+    resize(image, image, Size(640, 480), INTER_LINEAR);
+    //Converting Image to Gray
+    cv::Mat original = image.clone();
+    cv::Mat Input = image.clone();
+    cv::Mat Input_Gray ;
+    cvtColor(Input, Input_Gray, COLOR_BGR2GRAY);
+     //Getting Sobel 
+    cv::Mat grad = FindGreenLine::SobelGrad(Input_Gray);
+    imshow("Sobel Out", grad);
+    //Getting Saturation 
+    cv::Mat sat = FindGreenLine::GetSaturation(Input);
+    imshow("Saturation", sat);
+    //Combining the Sobel and Saturation images into a single binary image
+    cv::Mat comb;
+    bitwise_or(grad, sat, comb);
+    imshow("Vizualized", comb);
+    //Get X-Coordinate for Bounding box by using histogram
+    int PeakX = FindGreenLine::findPeak(comb, 128);
+    //Finding and drawing Lines
+    std::vector<cv::Point> Line = FindGreenLine::FindLine(comb, original, PeakX);
+    return Line;
+}
 
 
 int main( int argc, char** argv){
     //import image
     cv::Mat image = cv::imread("example.png");
     //display image
-    
     cv::namedWindow("Original", cv::WINDOW_AUTOSIZE);
     cv::imshow("Original",image);
-    resize(image, image, Size(640, 480), INTER_LINEAR);
+    //Intializing Class:
+    FindGreenLine Greeny;
+
+
      while (true)
      {
-        cv::Mat original = image.clone();
-        //Converting Image to Gray
-        cv::Mat Input = image.clone();
-        cv::Mat Input_Gray ;
-        cvtColor(Input, Input_Gray, COLOR_BGR2GRAY);
-        //Getting Sobel 
-        cv::Mat grad = SobelGrad(Input_Gray);
-        imshow("Sobel Out", grad);
-        //Getting Saturation 
-        cv::Mat sat = GetSaturation(Input);
-        imshow("Saturation", sat);
-        //Combining the Sobel and Saturation images into a single binary image
-        cv::Mat comb;
-        bitwise_or(grad, sat, comb);
-        imshow("Vizualized", comb);
-        //Get X-Coordinate for Bounding box by using histogram
-        int PeakX = findPeak(comb, 128);
-        //Finding and drawing Lines
-        std::vector<cv::Point> Line = FindLine(comb, original, PeakX);
+        std:vector<cv::Point> Line = Greeny.IdentifyLine(image);
+        
+       
 
         cv::waitKey(5);
      }
